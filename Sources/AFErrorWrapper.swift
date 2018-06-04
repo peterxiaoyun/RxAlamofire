@@ -9,7 +9,7 @@
 import Foundation
 import Alamofire
 
-enum AFErrorWrapper: Error {
+public enum AFErrorWrapper: Error {
     
     case Wrapper(AFError, Data?)
     
