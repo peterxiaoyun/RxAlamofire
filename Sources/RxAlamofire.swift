@@ -162,6 +162,28 @@ public func data(_ method: Alamofire.HTTPMethod,
     )
 }
 
+/**
+ Creates an observable of the returned data (Include the error response if an error occurs)
+ 
+ - parameter method: Alamofire method object
+ - parameter url: An object adopting `URLConvertible`
+ - parameter parameters: A dictionary containing all necessary options
+ - parameter encoding: The kind of encoding used to process parameters
+ - parameter header: A dictionary containing all the additional headers
+ 
+ - returns: An observable of `NSData`
+ */
+public func dataWithErrorResponse(_ method: Alamofire.HTTPMethod,
+                                  _ url: URLConvertible,
+                                  parameters: [String: Any]? = nil,
+                                  encoding: ParameterEncoding = URLEncoding.default,
+                                  headers: [String: String]? = nil) -> Observable<Data> {
+    return SessionManager.default.rx.dataWithErrorResponse(method, url,
+                                                           parameters: parameters,
+                                                           encoding: encoding,
+                                                           headers: headers)
+}
+
 // MARK: string
 
 /**
@@ -543,7 +565,34 @@ extension Reactive where Base: SessionManager {
             headers: headers
             ).flatMap { $0.rx.data() }
     }
-
+    
+    /*
+     Creates an observable of the data but return both response body and error when an error happenes
+     
+     - parameter URLRequest: An object adopting `URLRequestConvertible`
+     - parameter parameters: A dictionary containing all necessary options
+     - parameter encoding: The kind of encoding used to process parameters
+     - parameter header: A dictionary containing all the additional headers
+     
+     - returns: An observable of `NSData`
+     */
+    public func dataWithErrorResponse(_ method: Alamofire.HTTPMethod,
+                                      _ url: URLConvertible,
+                                      parameters: [String: Any]? = nil,
+                                      encoding: ParameterEncoding = URLEncoding.default,
+                                      headers: [String: String]? = nil
+        )
+        -> Observable<Data>
+    {
+        return request(
+            method,
+            url,
+            parameters: parameters,
+            encoding: encoding,
+            headers: headers
+            ).flatMap { $0.rx.dataWithErrorResponse() }
+    }
+    
     // MARK: string
 
     /**
@@ -938,7 +987,11 @@ extension Reactive where Base: DataRequest {
     public func data() -> Observable<Data> {
         return result(responseSerializer: DataRequest.dataResponseSerializer())
     }
-
+    
+    public func dataWithErrorResponse() -> Observable<Data> {
+        return resultWithResponseBody(responseSerializer: DataRequest.dataResponseSerializer())
+    }
+    
     /**
     Returns an `Observable` of a String for the current request
 
