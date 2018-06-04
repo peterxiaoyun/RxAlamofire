@@ -894,7 +894,36 @@ extension Reactive where Base: DataRequest {
             }
         }
     }
-
+    
+    public func resultWithResponseBody<T: DataResponseSerializerProtocol>(queue: DispatchQueue? = nil,  responseSerializer: T) -> Observable<T.SerializedObject> {
+        return Observable.create { observer in
+            let dataRequest = self.validateSuccessfulResponse()
+                .response(queue: queue, responseSerializer: responseSerializer) { (packedResponse) -> Void in
+                    switch packedResponse.result {
+                    case .success(let result):
+                        if let _ = packedResponse.response {
+                            observer.on(.next(result))
+                            observer.on(.completed)
+                        }
+                        else {
+                            observer.on(.error(RxAlamofireUnknownError))
+                        }
+                    case .failure(let error):
+                        if let err = error as? AFError {
+                            let bodyData = packedResponse.data
+                            let errWrapper = AFErrorWrapper.Wrapper(err, bodyData)
+                            observer.on(.error(errWrapper as Error))
+                        } else {
+                            observer.on(.error(error as Error))
+                        }
+                    }
+            }
+            return Disposables.create {
+                dataRequest.cancel()
+            }
+        }
+    }
+    
     /**
     Returns an `Observable` of NSData for the current request.
 
